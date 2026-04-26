@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Восход и Закат</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --panel-bg: #16213e;
+            --toolbar-bg: #0f3460;
+            --accent: #e94560;
+            --accent2: #0ea5e9;
+            --text: #e0e0e0;
+            --text-secondary: #a0a0b8;
+            --border: #2a2a4a;
+            --input-bg: #1e1e36;
+            --hover: #1a3a5c;
+            --canvas-bg: #0d0d1a;
+            --button-active: #e94560;
+            --snap-color: #4ade80;
+            --gold: #fbbf24;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* Верхняя панель */
+        .header {
+            background: var(--toolbar-bg);
+            border-bottom: 2px solid var(--border);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            z-index: 100;
+            position: relative;
+        }
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(251, 191, 36, 0.5);
+            margin: 0;
+            text-align: center;
+        }
+
+        /* Основной контейнер */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            padding: 16px;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        /* Карточки */
+        .card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            width: 320px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .card h2 {
+            font-size: 18px;
+            color: var(--accent2);
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .card .time-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: var(--input-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .time-row label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            flex: 1;
+        }
+        .time-row .value {
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: var(--text);
+            font-size: 16px;
+            margin: 0 10px;
+            min-width: 50px;
+            text-align: center;
+        }
+        .time-row .adj-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            font-size: 18px;
+            line-height: 1;
+        }
+        .time-row .adj-btn:hover {
+            background: var(--hover);
+        }
+        .time-row .adj-btn:active {
+            background: var(--button-active);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .input-group label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .input-group input {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 100%;
+            outline: none;
+            font-family: inherit;
+        }
+        .input-group input:focus {
+            border-color: var(--accent2);
+        }
+
+        button.primary {
+            background: var(--accent2);
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.15s;
+            width: 100%;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        button.primary:hover {
+            background: #0284c7;
+        }
+        button.primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .hijri-date {
+            color: var(--gold);
+            font-size: 20px;
+            text-align: center;
+            font-weight: 600;
+            padding: 10px;
+            background: rgba(251,191,36,0.1);
+            border-radius: 8px;
+            border: 1px solid var(--gold);
+            letter-spacing: 1px;
+        }
+        .coord-info {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: center;
+            word-break: break-all;
+        }
+
+        .status-message {
+            font-size: 12px;
+            color: var(--accent2);
+            text-align: center;
+            min-height: 18px;
+            font-style: italic;
+        }
+
+        /* Адаптив */
+        @media (max-width: 700px) {
+            .main-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            .card {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>☀️ Восход и Закат 🌙</h1>
+    </div>
+
+    <div class="main-container">
+        <!-- Карточка города и даты -->
+        <div class="card">
+            <h2>📅 Сегодня</h2>
+            <div class="hijri-date" id="hijriDate">...</div>
+            <div class="input-group">
+                <label>🏙️ Город</label>
+                <input type="text" id="cityInput" placeholder="Например: Москва" value="Москва">
+            </div>
+            <button class="primary" id="fetchBtn">🌍 Получить данные</button>
+            <div class="coord-info" id="coordInfo"></div>
+            <div class="status-message" id="statusMsg"></div>
+        </div>
+
+        <!-- Карточка времени -->
+        <div class="card">
+            <h2>⏰ Время (местное)</h2>
+            <div class="time-row" id="rowDawn">
+                <label>🌄 Рассвет</label>
+                <span class="value" id="valDawn">--:--</span>
+                <button class="adj-btn" data-type="dawn" data-dir="-">−</button>
+                <button class="adj-btn" data-type="dawn" data-dir="+">+</button>
+            </div>
+            <div class="time-row" id="rowSunrise">
+                <label>🌅 Восход</label>
+                <span class="value" id="valSunrise">--:--</span>
+                <button class="adj-btn" data-type="sunrise" data-dir="-">−</button>
+                <button class="adj-btn" data-type="sunrise" data-dir="+">+</button>
+            </div>
+            <div class="time-row" id="rowSunset">
+                <label>🌇 Закат</label>
+                <span class="value" id="valSunset">--:--</span>
+                <button class="adj-btn" data-type="sunset" data-dir="-">−</button>
+                <button class="adj-btn" data-type="sunset" data-dir="+">+</button>
+            </div>
+            <div class="time-row" id="rowDusk">
+                <label>🌆 Сумерки</label>
+                <span class="value" id="valDusk">--:--</span>
+                <button class="adj-btn" data-type="dusk" data-dir="-">−</button>
+                <button class="adj-btn" data-type="dusk" data-dir="+">+</button>
+            </div>
+            <div style="font-size: 11px; color: var(--text-secondary); text-align: center; margin-top: 6px;">
+                Корректировка ± (сохраняется в Firebase)
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+
+        // Ваша конфигурация Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBppttXduHz-BVV3XRhyaPMywW_Lch2Jes",
+            authDomain: "dddd-8e287.firebaseapp.com",
+            projectId: "dddd-8e287",
+            storageBucket: "dddd-8e287.firebasestorage.app",
+            messagingSenderId: "678020145717",
+            appId: "1:678020145717:web:19bf8867df347a22cc477c"
+        };
+
+        let db;
+        let firebaseReady = false;
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            firebaseReady = true;
+            console.log('Firebase инициализирован');
+        } catch (e) {
+            console.warn('Firebase не доступен:', e.message);
+        }
+
+        // Глобальные переменные
+        let sunriseData = {
+            dawn: null,    // Рассвет (начало утренних сумерек)
+            sunrise: null, // Восход
+            sunset: null,  // Закат
+            dusk: null     // Сумерки (конец вечерних сумерек)
+        };
+        let corrections = {
+            dawn: 0,
+            sunrise: 0,
+            sunset: 0,
+            dusk: 0
+        };
+        let currentCity = 'Москва';
+        let currentLat = 55.7558;
+        let currentLon = 37.6173;
+
+        // Элементы DOM
+        const hijriEl = document.getElementById('hijriDate');
+        const cityInput = document.getElementById('cityInput');
+        const fetchBtn = document.getElementById('fetchBtn');
+        const coordInfo = document.getElementById('coordInfo');
+        const statusMsg = document.getElementById('statusMsg');
+        const valDawn = document.getElementById('valDawn');
+        const valSunrise = document.getElementById('valSunrise');
+        const valSunset = document.getElementById('valSunset');
+        const valDusk = document.getElementById('valDusk');
+
+        // === Хиджра (приблизительно) ===
+        function getHijriDate(gregDate) {
+            // Простая формула конвертации (приблизительная)
+            const jd = gregDate.getTime() / 86400000 + 2440587.5;
+            const l = jd - 1948440 + 10632;
+            const n = Math.floor((l - 1) / 10631);
+            const l2 = l - 10631 * n + 354;
+            const j = Math.floor((10985 - l2) / 5316) * Math.floor((50 * l2) / 17719) + Math.floor(l2 / 5670) * Math.floor((43 * l2) / 15238);
+            const l3 = l2 - Math.floor((30 - j) / 15) * Math.floor((17719 * j) / 50) - Math.floor(j / 16) * Math.floor((15238 * j) / 43) + 29;
+            const month = Math.floor((24 * l3) / 709);
+            const day = l3 - Math.floor((709 * month) / 24);
+            const year = 30 * n + j - 30;
+            const hijriMonths = [
+                "Мухаррам", "Сафар", "Раби аль-авваль", "Раби ас-сани",
+                "Джумада аль-уля", "Джумада ас-сани", "Раджаб", "Шаабан",
+                "Рамадан", "Шавваль", "Зу-ль-када", "Зу-ль-хиджа"
+            ];
+            return `${day} ${hijriMonths[month - 1]} ${year} г.`;
+        }
+
+        // === Геокодирование (Nominatim) ===
+        async function geocodeCity(city) {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}&limit=1`;
+            const response = await fetch(url);
+            const data = await response.json();
+            if (data && data.length > 0) {
+                return {
+                    lat: parseFloat(data[0].lat),
+                    lon: parseFloat(data[0].lon),
+                    display_name: data[0].display_name
+                };
+            }
+            throw new Error('Город не найден');
+        }
+
+        // === Получение времени солнца (sunrise-sunset.org) ===
+        async function fetchSunTimes(lat, lon, date = 'today') {
+            const url = `https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lon}&formatted=0&date=${date}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            if (data.status !== 'OK') throw new Error('Ошибка API');
+            return {
+                dawn: data.results.civil_twilight_begin,   // Рассвет (начало гражданских сумерек)
+                sunrise: data.results.sunrise,
+                sunset: data.results.sunset,
+                dusk: data.results.civil_twilight_end      // Сумерки (конец гражданских сумерек)
+            };
+        }
+
+        // === Преобразование UTC времени в местное (по смещению) ===
+        function utcToLocal(utcString) {
+            const date = new Date(utcString);
+            // Добавляем смещение локальной временной зоны
+            const offset = date.getTimezoneOffset();
+            date.setMinutes(date.getMinutes() - offset);
+            return date;
+        }
+
+        function formatTime(date) {
+            const hh = String(date.getHours()).padStart(2, '0');
+            const mm = String(date.getMinutes()).padStart(2, '0');
+            return `${hh}:${mm}`;
+        }
+
+        // Применить корректировки (минуты) к объекту Date
+        function applyCorrection(date, type) {
+            const newDate = new Date(date);
+            newDate.setMinutes(newDate.getMinutes() + corrections[type]);
+            return newDate;
+        }
+
+        // Обновить отображаемые значения
+        function updateDisplay(sunData) {
+            if (!sunData) return;
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0];
+
+            // Получаем локальные даты из UTC
+            const dawnLocal = utcToLocal(sunData.dawn);
+            const sunriseLocal = utcToLocal(sunData.sunrise);
+            const sunsetLocal = utcToLocal(sunData.sunset);
+            const duskLocal = utcToLocal(sunData.dusk);
+
+            // Применяем пользовательские корректировки
+            const finalDawn = applyCorrection(dawnLocal, 'dawn');
+            const finalSunrise = applyCorrection(sunriseLocal, 'sunrise');
+            const finalSunset = applyCorrection(sunsetLocal, 'sunset');
+            const finalDusk = applyCorrection(duskLocal, 'dusk');
+
+            valDawn.textContent = formatTime(finalDawn);
+            valSunrise.textContent = formatTime(finalSunrise);
+            valSunset.textContent = formatTime(finalSunset);
+            valDusk.textContent = formatTime(finalDusk);
+
+            // Обновляем хиджру
+            hijriEl.textContent = getHijriDate(now);
+            statusMsg.textContent = '✅ Данные обновлены';
+        }
+
+        // Загрузить данные из Firebase
+        async function loadCorrections() {
+            if (!firebaseReady) {
+                // Попробуем localStorage
+                const saved = localStorage.getItem('sunrise_corrections');
+                if (saved) {
+                    try { corrections = JSON.parse(saved); } catch(e){}
+                }
+                return;
+            }
+            try {
+                const snap = await getDoc(doc(db, 'settings', 'corrections'));
+                if (snap.exists()) {
+                    const data = snap.data();
+                    if (data.corrections) corrections = data.corrections;
+                    if (data.city) { currentCity = data.city;
+                        cityInput.value = currentCity; }
+                }
+            } catch (e) {
+                console.warn('Ошибка загрузки из Firebase:', e);
+                const saved = localStorage.getItem('sunrise_corrections');
+                if (saved) {
+                    try { corrections = JSON.parse(saved); } catch(e){}
+                }
+            }
+        }
+
+        // Сохранить корректировки и город в Firebase
+        async function saveSettings() {
+            const data = { corrections, city: currentCity, updatedAt: new Date().toISOString() };
+            if (firebaseReady) {
+                try {
+                    await setDoc(doc(db, 'settings', 'corrections'), data);
+                    statusMsg.textContent = '💾 Сохранено в Firebase';
+                } catch (e) {
+                    console.warn('Ошибка сохранения в Firebase:', e);
+                    localStorage.setItem('sunrise_corrections', JSON.stringify(corrections));
+                    statusMsg.textContent = '💾 Сохранено локально';
+                }
+            } else {
+                localStorage.setItem('sunrise_corrections', JSON.stringify(corrections));
+                statusMsg.textContent = '💾 Сохранено локально';
+            }
+        }
+
+        // Обновить всё: получить координаты, данные солнца, отобразить
+        async function refreshAll(city = currentCity) {
+            try {
+                statusMsg.textContent = '⏳ Загрузка...';
+                const geo = await geocodeCity(city);
+                currentLat = geo.lat;
+                currentLon = geo.lon;
+                currentCity = city;
+                coordInfo.textContent = `📍 ${geo.display_name}`;
+                cityInput.value = city;
+
+                const sunData = await fetchSunTimes(currentLat, currentLon);
+                sunriseData = sunData;
+                updateDisplay(sunData);
+                await saveSettings();
+            } catch (e) {
+                statusMsg.textContent = '❌ Ошибка: ' + e.message;
+                // Используем демо-данные для Москвы, если API недоступен
+                if (city === 'Москва') {
+                    coordInfo.textContent = '📍 Москва (демо)';
+                    const fakeNow = new Date();
+                    const fakeDawn = new Date(fakeNow); fakeDawn.setHours(3, 45, 0);
+                    const fakeSunrise = new Date(fakeNow); fakeSunrise.setHours(4, 45, 0);
+                    const fakeSunset = new Date(fakeNow); fakeSunset.setHours(20, 30, 0);
+                    const fakeDusk = new Date(fakeNow); fakeDusk.setHours(21, 30, 0);
+                    sunriseData = { dawn: fakeDawn.toISOString(), sunrise: fakeSunrise.toISOString(),
+                        sunset: fakeSunset.toISOString(), dusk: fakeDusk.toISOString() };
+                    updateDisplay(sunriseData);
+                }
+            }
+        }
+
+        // Инициализация при загрузке
+        async function initialize() {
+            await loadCorrections();
+            // Загружаем сохранённый город или используем Москву
+            if (firebaseReady) {
+                try {
+                    const snap = await getDoc(doc(db, 'settings', 'corrections'));
+                    if (snap.exists() && snap.data().city) {
+                        currentCity = snap.data().city;
+                        cityInput.value = currentCity;
+                    }
+                } catch(e){}
+            } else {
+                const savedCity = localStorage.getItem('sunrise_city');
+                if (savedCity) { currentCity = savedCity;
+                    cityInput.value = currentCity; }
+            }
+            await refreshAll(currentCity);
+        }
+
+        // Обработчики кнопок корректировки
+        document.querySelectorAll('.adj-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const type = btn.dataset.type;
+                const dir = btn.dataset.dir;
+                const delta = dir === '+' ? 1 : -1;
+                corrections[type] = (corrections[type] || 0) + delta;
+                // Обновить отображение, не делая новый запрос к API
+                if (sunriseData.dawn) {
+                    updateDisplay(sunriseData);
+                }
+                await saveSettings();
+            });
+        });
+
+        // Кнопка получения данных по городу
+        fetchBtn.addEventListener('click', async () => {
+            const city = cityInput.value.trim();
+            if (!city) {
+                statusMsg.textContent = 'Введите название города';
+                return;
+            }
+            currentCity = city;
+            localStorage.setItem('sunrise_city', city);
+            await refreshAll(city);
+        });
+
+        // Enter в поле ввода
+        cityInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') fetchBtn.click();
+        });
+
+        // Автообновление каждые 60 секунд (для демонстрации живого времени)
+        setInterval(() => {
+            if (sunriseData.dawn) {
+                updateDisplay(sunriseData);
+            }
+        }, 60000);
+
+        // Запуск
+        initialize();
+    </script>
+</body>
+</html>
